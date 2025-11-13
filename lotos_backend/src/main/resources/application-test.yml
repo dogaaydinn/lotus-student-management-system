@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        show_sql: true
+
+  h2:
+    console:
+      enabled: true
+
+  flyway:
+    enabled: false
+
+  cache:
+    type: none
+
+logging:
+  level:
+    root: INFO
+    com.lotus.lotusSPM: DEBUG
+    org.springframework.security: DEBUG

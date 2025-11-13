@@ -1,0 +1,173 @@
+# ================================================
+# Lotus Student Management System - .gitignore
+# ================================================
+
+# ================================================
+# Sensitive Files & Secrets
+# ================================================
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+*.p12
+*.jks
+secrets/
+**/secrets/
+
+# ================================================
+# Java / Spring Boot
+# ================================================
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+# ================================================
+# Node.js / Vue.js
+# ================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+dist/
+dist-ssr
+*.local
+
+# Editor directories and files
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ================================================
+# Logs
+# ================================================
+logs/
+*.log
+/logs
+log/
+
+# ================================================
+# Database
+# ================================================
+*.sql.bak
+*.db
+*.sqlite
+*.sqlite3
+/data/
+
+# ================================================
+# Testing
+# ================================================
+coverage/
+*.coverage
+.nyc_output
+test-results/
+junit/
+.pytest_cache/
+
+# ================================================
+# Build / Deployment
+# ================================================
+build/
+*.war
+*.ear
+*.nar
+*.zip
+*.tar.gz
+*.rar
+
+# ================================================
+# Docker
+# ================================================
+docker-compose.override.yml
+.docker/
+
+# ================================================
+# Kubernetes
+# ================================================
+k8s/secret.yaml.local
+k8s/**/secret-*.yaml
+
+# ================================================
+# OS Specific
+# ================================================
+### macOS ###
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+### Windows ###
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+### Linux ###
+*~
+.directory
+.Trash-*
+
+# ================================================
+# Temporary Files
+# ================================================
+*.tmp
+*.temp
+*.swp
+*.swo
+*~.nib
+*.bak
+
+# ================================================
+# Application Specific
+# ================================================
+application-*.properties.local
+uploads/
+downloads/
+temp/
+cache/
+
+# ================================================
+# Security & Audit
+# ================================================
+dependency-check-report.html
+owasp-dependency-check.xml
+
+# Keep example files
+!.env.example
+!.env.docker.example
