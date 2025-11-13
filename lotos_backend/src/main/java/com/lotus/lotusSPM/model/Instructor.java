@@ -14,6 +14,7 @@ public class Instructor {
 		@Id
 		private Long id;
 		private String username;
+		private String password;
 		private String name;
 		private String surname;
 		private String email;
@@ -26,6 +27,7 @@ public class Instructor {
 			super();
 			this.id = id;
 			this.username = username;
+			this.password = password;
 			this.name = name;
 			this.surname = surname;
 			this.faculty = faculty;
@@ -55,7 +57,14 @@ public class Instructor {
 			this.username = username;
 		}
 
-		
+		@Column(name = "PASSWORD")
+		public String getPassword() {
+			return password;
+		}
+
+		public void setPassword(String password) {
+			this.password = password;
+		}
 
 		@Column(name = "NAME")
 		public String getName() {

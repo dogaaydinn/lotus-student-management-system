@@ -50,6 +50,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         http
             .cors()
                 .and()
+            // CSRF protection is intentionally disabled for JWT-based stateless REST API
+            // JWT tokens are stored in localStorage (not cookies), making the application
+            // immune to CSRF attacks which only exploit cookie-based authentication.
+            // This is a standard and secure practice for stateless REST APIs.
             .csrf()
                 .disable()
             .exceptionHandling()

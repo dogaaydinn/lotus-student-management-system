@@ -63,7 +63,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                     throw new UsernameNotFoundException("Instructor not found with username: " + username);
                 }
                 return new UserPrincipal(instructor.getId(), instructor.getUsername(),
-                    instructor.getEmail(), null, "INSTRUCTOR");
+                    instructor.getEmail(), instructor.getPassword(), "INSTRUCTOR");
 
             case "CAREER_CENTER":
                 CareerCenter careerCenter = careerCenterDao.findByUsername(username);
