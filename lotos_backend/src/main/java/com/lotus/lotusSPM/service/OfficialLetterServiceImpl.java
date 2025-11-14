@@ -36,6 +36,16 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class OfficialLetterServiceImpl implements OfficialLetterService {
 
+	/**
+	 * Validate that a string is safe to use as a single file component.
+	 * Returns true if the string contains no path separators or "..".
+	 * Adapt as needed for further restrictions.
+	 */
+	private static boolean isValidFileComponent(String value) {
+		if (value == null || value.isEmpty()) return false;
+		return !value.contains("..") && !value.contains("/") && !value.contains("\\");
+	}
+
 	@Value("${app.pdf.output.path:${java.io.tmpdir}/lotus-pdfs}")
 	private String pdfOutputPath;
 
@@ -49,6 +59,12 @@ public class OfficialLetterServiceImpl implements OfficialLetterService {
 
 		OfficialLetter officialLetter = new OfficialLetter();
 		Student student = studentDao.findByUsername(ol.getUsername());
+
+		// Validate username for safe usage in file name
+		if (!isValidFileComponent(ol.getUsername())) {
+			log.error("Invalid username used as file component: {}", ol.getUsername());
+			throw new IllegalArgumentException("Invalid username for official letter file.");
+		}
 
 		Document document = new Document();
 		try {
