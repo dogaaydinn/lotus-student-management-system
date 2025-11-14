@@ -39,9 +39,9 @@ This document outlines the enterprise-grade improvements implemented in the Lotu
   ```
 - **Protection**: DDoS prevention, brute force attack mitigation
 
-### 4. **Enhanced Error Handling**
-- **Location**: `GlobalExceptionHandler.java`
-- **Features**:
+### 4. **Enhanced Error Handling** (Planned)
+- **Planned Location**: `GlobalExceptionHandler.java` (not yet implemented)
+- **Planned Features**:
   - Structured error responses (JSON)
   - Validation error details
   - No stack trace exposure in production
