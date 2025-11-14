@@ -1,0 +1,330 @@
+# GraphQL Schema for Lotus Student Management System
+# Enterprise API Pattern: GraphQL for flexible, efficient data fetching
+
+# Scalar Types
+scalar DateTime
+scalar Upload
+
+# Enum Types
+enum InternshipStatus {
+    NOT_STARTED
+    IN_PROGRESS
+    COMPLETED
+    CANCELLED
+}
+
+enum UserRole {
+    STUDENT
+    INSTRUCTOR
+    COORDINATOR
+    ADMIN
+    CAREER_CENTER
+}
+
+enum DocumentType {
+    TRANSCRIPT
+    RESUME
+    COVER_LETTER
+    CERTIFICATE
+    OTHER
+}
+
+# Input Types for Mutations
+input CreateStudentInput {
+    username: String!
+    password: String!
+    name: String!
+    surname: String!
+    email: String!
+    faculty: String
+    department: String
+    internshipStatus: InternshipStatus
+}
+
+input UpdateStudentInput {
+    name: String
+    surname: String
+    email: String
+    faculty: String
+    department: String
+    internshipStatus: InternshipStatus
+}
+
+input StudentFilterInput {
+    faculty: String
+    department: String
+    internshipStatus: InternshipStatus
+    searchTerm: String
+}
+
+input PaginationInput {
+    page: Int = 0
+    size: Int = 20
+    sort: String = "id"
+    direction: String = "ASC"
+}
+
+input CreateOpportunityInput {
+    title: String!
+    description: String!
+    company: String!
+    location: String
+    requirements: String
+    salary: String
+    deadline: DateTime
+}
+
+# Object Types
+type Student {
+    id: ID!
+    username: String!
+    name: String!
+    surname: String!
+    email: String!
+    faculty: String
+    department: String
+    internshipStatus: InternshipStatus
+    createdAt: DateTime!
+    updatedAt: DateTime
+    documents: [Document!]!
+    applications: [ApplicationForm!]!
+    messages: [Message!]!
+}
+
+type Instructor {
+    id: ID!
+    username: String!
+    name: String!
+    surname: String!
+    email: String!
+    faculty: String
+    department: String
+    students: [Student!]!
+}
+
+type Coordinator {
+    id: ID!
+    username: String!
+    name: String!
+    surname: String!
+    email: String!
+    faculty: String
+    department: String
+    processedForms: Int!
+}
+
+type CareerCenter {
+    id: ID!
+    username: String!
+    name: String!
+    surname: String!
+    email: String!
+    opportunities: [Opportunity!]!
+}
+
+type Opportunity {
+    id: ID!
+    title: String!
+    description: String!
+    company: String!
+    location: String
+    requirements: String
+    salary: String
+    deadline: DateTime
+    careerId: ID!
+    careerCenter: CareerCenter
+    applications: [ApplicationForm!]!
+    createdAt: DateTime!
+}
+
+type ApplicationForm {
+    id: ID!
+    studentId: ID!
+    student: Student!
+    coordinatorId: ID
+    coordinator: Coordinator
+    opportunityId: ID
+    opportunity: Opportunity
+    status: String!
+    submittedAt: DateTime!
+    reviewedAt: DateTime
+}
+
+type Document {
+    id: ID!
+    name: String!
+    type: DocumentType!
+    size: Int!
+    uploadedAt: DateTime!
+    uploadedBy: ID!
+    url: String!
+}
+
+type Message {
+    id: ID!
+    subject: String!
+    content: String!
+    senderId: ID!
+    receiverId: ID!
+    sender: User!
+    receiver: User!
+    read: Boolean!
+    sentAt: DateTime!
+}
+
+type Notification {
+    id: ID!
+    userId: ID!
+    type: String!
+    message: String!
+    read: Boolean!
+    link: String
+    createdAt: DateTime!
+}
+
+type User {
+    id: ID!
+    username: String!
+    name: String!
+    surname: String!
+    email: String!
+    role: UserRole!
+}
+
+# Pagination Types
+type PageInfo {
+    totalElements: Int!
+    totalPages: Int!
+    currentPage: Int!
+    pageSize: Int!
+    hasNext: Boolean!
+    hasPrevious: Boolean!
+}
+
+type StudentPage {
+    content: [Student!]!
+    pageInfo: PageInfo!
+}
+
+type OpportunityPage {
+    content: [Opportunity!]!
+    pageInfo: PageInfo!
+}
+
+# Analytics Types
+type EnrollmentStats {
+    faculty: String!
+    totalStudents: Int!
+    activeInternships: Int!
+    completedInternships: Int!
+}
+
+type PlacementRate {
+    department: String!
+    totalStudents: Int!
+    placedStudents: Int!
+    placementRate: Float!
+}
+
+# Root Query Type
+type Query {
+    # Student Queries
+    student(id: ID!): Student
+    studentByUsername(username: String!): Student
+    students(filter: StudentFilterInput, pagination: PaginationInput): StudentPage!
+
+    # Instructor Queries
+    instructor(id: ID!): Instructor
+    instructors: [Instructor!]!
+
+    # Coordinator Queries
+    coordinator(id: ID!): Coordinator
+    coordinators: [Coordinator!]!
+
+    # Career Center Queries
+    careerCenter(id: ID!): CareerCenter
+    careerCenters: [CareerCenter!]!
+
+    # Opportunity Queries
+    opportunity(id: ID!): Opportunity
+    opportunities(pagination: PaginationInput): OpportunityPage!
+    opportunitiesByCompany(company: String!): [Opportunity!]!
+
+    # Application Queries
+    application(id: ID!): ApplicationForm
+    applicationsByStudent(studentId: ID!): [ApplicationForm!]!
+    applicationsByCoordinator(coordinatorId: ID!): [ApplicationForm!]!
+
+    # Document Queries
+    document(id: ID!): Document
+    documentsByStudent(studentId: ID!): [Document!]!
+
+    # Message Queries
+    message(id: ID!): Message
+    messagesByUser(userId: ID!): [Message!]!
+    unreadMessages(userId: ID!): [Message!]!
+
+    # Notification Queries
+    notifications(userId: ID!): [Notification!]!
+    unreadNotifications(userId: ID!): [Notification!]!
+
+    # Analytics Queries
+    enrollmentStats: [EnrollmentStats!]!
+    placementRates: [PlacementRate!]!
+
+    # Search Query (Elasticsearch powered)
+    search(query: String!, type: String): [SearchResult!]!
+}
+
+# Root Mutation Type
+type Mutation {
+    # Student Mutations
+    createStudent(input: CreateStudentInput!): Student!
+    updateStudent(id: ID!, input: UpdateStudentInput!): Student!
+    deleteStudent(id: ID!): Boolean!
+
+    # Opportunity Mutations
+    createOpportunity(input: CreateOpportunityInput!): Opportunity!
+    updateOpportunity(id: ID!, input: CreateOpportunityInput!): Opportunity!
+    deleteOpportunity(id: ID!): Boolean!
+
+    # Application Mutations
+    submitApplication(studentId: ID!, opportunityId: ID!): ApplicationForm!
+    reviewApplication(id: ID!, status: String!, coordinatorId: ID!): ApplicationForm!
+
+    # Document Mutations
+    uploadDocument(file: Upload!, studentId: ID!, type: DocumentType!): Document!
+    deleteDocument(id: ID!): Boolean!
+
+    # Message Mutations
+    sendMessage(senderId: ID!, receiverId: ID!, subject: String!, content: String!): Message!
+    markMessageAsRead(id: ID!): Message!
+    deleteMessage(id: ID!): Boolean!
+
+    # Notification Mutations
+    markNotificationAsRead(id: ID!): Notification!
+    markAllNotificationsAsRead(userId: ID!): Boolean!
+}
+
+# Root Subscription Type for Real-time Updates
+type Subscription {
+    # Real-time student updates
+    studentCreated: Student!
+    studentUpdated(id: ID!): Student!
+
+    # Real-time opportunity updates
+    opportunityCreated: Opportunity!
+    opportunityUpdated(id: ID!): Opportunity!
+
+    # Real-time message notifications
+    messageReceived(userId: ID!): Message!
+
+    # Real-time notifications
+    notificationReceived(userId: ID!): Notification!
+
+    # Application status changes
+    applicationStatusChanged(studentId: ID!): ApplicationForm!
+}
+
+# Search Result Union Type
+union SearchResult = Student | Instructor | Opportunity | Document
