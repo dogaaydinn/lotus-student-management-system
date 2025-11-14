@@ -35,11 +35,11 @@ public class ApplicationFormController {
 	public ResponseEntity<?> deleteForm(@PathVariable("id") String id) {
 		try {
 			applicationFormService.deleteForm(id);
+			log.info("Application form deleted successfully: {}", id);
 			return ResponseEntity.ok().build();
 		} catch (Exception ex) {
-			System.out.println(ex.getMessage());
-			ex.printStackTrace();
-			return ResponseEntity.notFound().build();
+			log.error("Failed to delete application form with id: {}. Error: {}", id, ex.getMessage(), ex);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
 	}
 	

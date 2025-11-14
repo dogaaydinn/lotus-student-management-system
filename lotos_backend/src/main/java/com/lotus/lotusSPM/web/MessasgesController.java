@@ -40,12 +40,11 @@ public class MessasgesController {
 	public ResponseEntity<?> deleteMessage(@PathVariable("id") Long id) {
 		try {
 			messagesService.deleteMessage(id);
+			log.info("Message deleted successfully: {}", id);
 			return ResponseEntity.ok().build();
-			// ??????????
 		} catch (Exception ex) {
-			System.out.println(ex.getMessage());
-			ex.printStackTrace();
-			return ResponseEntity.notFound().build();
+			log.error("Failed to delete message with id: {}. Error: {}", id, ex.getMessage(), ex);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
 
 	}
