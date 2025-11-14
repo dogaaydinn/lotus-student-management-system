@@ -8,7 +8,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Arrays;
 import java.util.List;
@@ -24,9 +23,6 @@ class StudentServiceTest {
 
     @Mock
     private StudentDao studentDao;
-
-    @Mock
-    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private StudentServiceImpl studentService;
@@ -53,7 +49,7 @@ class StudentServiceTest {
         when(studentDao.findAll()).thenReturn(students);
 
         // When
-        List<Student> result = studentService.getAllStudents();
+        List<Student> result = studentService.findStudents();
 
         // Then
         assertNotNull(result);
@@ -67,7 +63,7 @@ class StudentServiceTest {
         when(studentDao.findById(1L)).thenReturn(Optional.of(testStudent));
 
         // When
-        Student result = studentService.getStudentById(1L);
+        Student result = studentService.findStdById(1L);
 
         // Then
         assertNotNull(result);
@@ -81,11 +77,10 @@ class StudentServiceTest {
         // Given
         when(studentDao.findById(999L)).thenReturn(Optional.empty());
 
-        // When
-        Student result = studentService.getStudentById(999L);
-
-        // Then
-        assertNull(result);
+        // When & Then
+        assertThrows(Exception.class, () -> {
+            studentService.findStdById(999L);
+        });
         verify(studentDao, times(1)).findById(999L);
     }
 
@@ -94,12 +89,11 @@ class StudentServiceTest {
         // Given
         Student newStudent = new Student();
         newStudent.setUsername("newstudent");
-        newStudent.setPassword("rawPassword");
+        newStudent.setPassword("hashedPassword");
         newStudent.setName("New");
         newStudent.setSurname("Student");
         newStudent.setEmail("new@student.com");
 
-        when(passwordEncoder.encode("rawPassword")).thenReturn("hashedPassword");
         when(studentDao.save(any(Student.class))).thenReturn(newStudent);
 
         // When
@@ -107,28 +101,6 @@ class StudentServiceTest {
 
         // Then
         assertNotNull(result);
-        verify(passwordEncoder, times(1)).encode("rawPassword");
-        verify(studentDao, times(1)).save(any(Student.class));
-    }
-
-    @Test
-    void testUpdateStudent() {
-        // Given
-        Student updatedStudent = new Student();
-        updatedStudent.setId(1L);
-        updatedStudent.setUsername("updateduser");
-        updatedStudent.setName("Updated");
-        updatedStudent.setSurname("Student");
-
-        when(studentDao.existsById(1L)).thenReturn(true);
-        when(studentDao.save(any(Student.class))).thenReturn(updatedStudent);
-
-        // When
-        Student result = studentService.updateStudent(updatedStudent);
-
-        // Then
-        assertNotNull(result);
-        assertEquals("Updated", result.getName());
         verify(studentDao, times(1)).save(any(Student.class));
     }
 

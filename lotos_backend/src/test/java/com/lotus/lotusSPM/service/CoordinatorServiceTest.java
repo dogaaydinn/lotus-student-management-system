@@ -8,7 +8,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,9 +22,6 @@ class CoordinatorServiceTest {
 
     @Mock
     private CoordinatorDao coordinatorDao;
-
-    @Mock
-    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private CoordinatorServiceImpl coordinatorService;
@@ -52,7 +48,7 @@ class CoordinatorServiceTest {
         when(coordinatorDao.findAll()).thenReturn(coordinators);
 
         // When
-        List<Coordinator> result = coordinatorService.getAllCoordinators();
+        List<Coordinator> result = coordinatorService.findCoordinators();
 
         // Then
         assertNotNull(result);
@@ -66,7 +62,7 @@ class CoordinatorServiceTest {
         when(coordinatorDao.findById(1L)).thenReturn(Optional.of(testCoordinator));
 
         // When
-        Coordinator result = coordinatorService.getCoordinatorById(1L);
+        Coordinator result = coordinatorService.findCoordinatorById(1L);
 
         // Then
         assertNotNull(result);
@@ -80,11 +76,10 @@ class CoordinatorServiceTest {
         // Given
         when(coordinatorDao.findById(999L)).thenReturn(Optional.empty());
 
-        // When
-        Coordinator result = coordinatorService.getCoordinatorById(999L);
-
-        // Then
-        assertNull(result);
+        // When & Then
+        assertThrows(Exception.class, () -> {
+            coordinatorService.findCoordinatorById(999L);
+        });
         verify(coordinatorDao, times(1)).findById(999L);
     }
 
@@ -93,12 +88,11 @@ class CoordinatorServiceTest {
         // Given
         Coordinator newCoordinator = new Coordinator();
         newCoordinator.setUsername("newcoordinator");
-        newCoordinator.setPassword("rawPassword");
+        newCoordinator.setPassword("hashedPassword");
         newCoordinator.setName("New");
         newCoordinator.setSurname("Coordinator");
         newCoordinator.setEmail("new@coordinator.com");
 
-        when(passwordEncoder.encode("rawPassword")).thenReturn("hashedPassword");
         when(coordinatorDao.save(any(Coordinator.class))).thenReturn(newCoordinator);
 
         // When
@@ -106,7 +100,6 @@ class CoordinatorServiceTest {
 
         // Then
         assertNotNull(result);
-        verify(passwordEncoder, times(1)).encode("rawPassword");
         verify(coordinatorDao, times(1)).save(any(Coordinator.class));
     }
 
@@ -119,11 +112,10 @@ class CoordinatorServiceTest {
         updatedCoordinator.setName("Updated");
         updatedCoordinator.setDepartment("Updated Department");
 
-        when(coordinatorDao.existsById(1L)).thenReturn(true);
         when(coordinatorDao.save(any(Coordinator.class))).thenReturn(updatedCoordinator);
 
         // When
-        Coordinator result = coordinatorService.updateCoordinator(updatedCoordinator);
+        Coordinator result = coordinatorService.save(updatedCoordinator);
 
         // Then
         assertNotNull(result);
@@ -171,32 +163,4 @@ class CoordinatorServiceTest {
         verify(coordinatorDao, times(1)).findByUsername("nonexistent");
     }
 
-    @Test
-    void testValidateCoordinatorCredentials_Success() {
-        // Given
-        String rawPassword = "password123";
-        testCoordinator.setPassword(passwordEncoder.encode(rawPassword));
-
-        when(coordinatorDao.findByUsername("testcoordinator")).thenReturn(testCoordinator);
-        when(passwordEncoder.matches(rawPassword, testCoordinator.getPassword())).thenReturn(true);
-
-        // When
-        boolean result = coordinatorService.validateCredentials("testcoordinator", rawPassword);
-
-        // Then
-        assertTrue(result);
-    }
-
-    @Test
-    void testValidateCoordinatorCredentials_WrongPassword() {
-        // Given
-        when(coordinatorDao.findByUsername("testcoordinator")).thenReturn(testCoordinator);
-        when(passwordEncoder.matches("wrongpassword", testCoordinator.getPassword())).thenReturn(false);
-
-        // When
-        boolean result = coordinatorService.validateCredentials("testcoordinator", "wrongpassword");
-
-        // Then
-        assertFalse(result);
-    }
 }

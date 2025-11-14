@@ -33,21 +33,21 @@ class MfaServiceTest {
         String username = "testuser";
 
         // When
-        String qrUrl = mfaService.generateQrCodeUrl(username, secret);
+        String qrUrl = mfaService.getQrCodeUrl(secret, username, "Lotus SPM");
 
         // Then
         assertNotNull(qrUrl);
         assertTrue(qrUrl.startsWith("otpauth://totp/"));
         assertTrue(qrUrl.contains(username));
         assertTrue(qrUrl.contains(secret));
-        assertTrue(qrUrl.contains("Lotus%20SPM")); // URL encoded issuer
+        assertTrue(qrUrl.contains("Lotus SPM")); // issuer
     }
 
     @Test
-    void testVerifyCode_ValidCode() {
+    void testVerifyCode_ValidCode() throws Exception {
         // Given
         String secret = mfaService.generateSecret();
-        String validCode = mfaService.generateCurrentCode(secret);
+        String validCode = mfaService.generateCode(secret);
 
         // When
         boolean isValid = mfaService.verifyCode(secret, validCode);
@@ -101,12 +101,12 @@ class MfaServiceTest {
     }
 
     @Test
-    void testGenerateCurrentCode() {
+    void testGenerateCurrentCode() throws Exception {
         // Given
         String secret = mfaService.generateSecret();
 
         // When
-        String code = mfaService.generateCurrentCode(secret);
+        String code = mfaService.generateCode(secret);
 
         // Then
         assertNotNull(code);
