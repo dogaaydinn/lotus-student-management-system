@@ -51,6 +51,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up JDK 17 for Java analysis
+        if: matrix.language == 'java'
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
       - name: Set up Node.js for JavaScript analysis
         if: matrix.language == 'javascript'
         uses: actions/setup-node@v4
@@ -64,8 +72,25 @@ jobs:
         with:
           languages: ${{ matrix.language }}
 
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+      - name: Build Java project
+        if: matrix.language == 'java'
+        run: |
+          cd lotos_backend
+          chmod +x mvnw
+          # Retry logic for network issues
+          for i in {1..3}; do
+            ./mvnw clean package -DskipTests -B -V && break || {
+              echo "Build attempt $i failed, retrying in 10 seconds..."
+              sleep 10
+            }
+          done
+
+      - name: Build JavaScript project
+        if: matrix.language == 'javascript'
+        run: |
+          cd lotus_frontend
+          npm ci
+          npm run build --if-present
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
