@@ -6,10 +6,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -25,9 +29,39 @@ import com.lotus.lotusSPM.model.OfficialLetter;
 import com.lotus.lotusSPM.model.Student;
 import com.lotus.lotusSPM.service.base.OfficialLetterService;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Service
 @Transactional(rollbackFor = Exception.class)
+@Slf4j
 public class OfficialLetterServiceImpl implements OfficialLetterService {
+
+	/**
+	 * Sanitize a string for safe use in filenames.
+	 * Removes all characters except alphanumeric, underscore, and hyphen.
+	 * This prevents path traversal attacks by removing path separators and special characters.
+	 */
+	private static String sanitizeFilename(String input) {
+		if (input == null || input.isEmpty()) {
+			return "unknown";
+		}
+		// Only allow alphanumeric characters, underscore, and hyphen
+		// This completely prevents path traversal by removing all path separators
+		return input.replaceAll("[^a-zA-Z0-9_-]", "_");
+	}
+
+	/**
+	 * Validate that a resolved path is within the expected directory.
+	 * This prevents path traversal attacks even if sanitization is bypassed.
+	 */
+	private boolean isPathSafe(Path resolvedPath, Path baseDirectory) throws IOException {
+		Path canonicalBase = baseDirectory.toRealPath();
+		Path canonicalResolved = resolvedPath.toAbsolutePath().normalize();
+		return canonicalResolved.startsWith(canonicalBase);
+	}
+
+	@Value("${app.pdf.output.path:${java.io.tmpdir}/lotus-pdfs}")
+	private String pdfOutputPath;
 
 	@Autowired
 	private OfficialLetterDao officialLetterDao;
@@ -42,7 +76,30 @@ public class OfficialLetterServiceImpl implements OfficialLetterService {
 
 		Document document = new Document();
 		try {
-			OutputStream outputStream = new FileOutputStream(new File("D:\\OfficialLetter.pdf"));
+			// Create output directory if it doesn't exist
+			Path outputDir = Paths.get(pdfOutputPath).toAbsolutePath().normalize();
+			if (!Files.exists(outputDir)) {
+				Files.createDirectories(outputDir);
+			}
+
+			// Sanitize username to prevent path traversal
+			// Only alphanumeric, underscore, and hyphen are allowed
+			String safeUsername = sanitizeFilename(ol.getUsername());
+
+			String filename = String.format("OfficialLetter_%s_%d.pdf",
+					safeUsername, System.currentTimeMillis());
+			Path filePath = outputDir.resolve(filename).normalize();
+
+			// Defense in depth: Verify the resolved path is within the base directory
+			if (!isPathSafe(filePath, outputDir)) {
+				log.error("Path traversal attempt detected for username: {}", ol.getUsername());
+				throw new SecurityException("Invalid file path: potential path traversal attack");
+			}
+
+			log.info("Creating official letter PDF for user: {} at safe path: {}",
+					ol.getUsername(), filePath);
+
+			OutputStream outputStream = new FileOutputStream(filePath.toFile());
 
 			PdfWriter.getInstance(document, outputStream);
 
@@ -67,9 +124,10 @@ public class OfficialLetterServiceImpl implements OfficialLetterService {
 			document.close();
 			outputStream.close();
 
-			System.out.println("Pdf created successfully.");
+			log.info("PDF created successfully for user: {} at path: {}", ol.getUsername(), filePath);
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Failed to create PDF for user: {}. Error: {}", ol.getUsername(), e.getMessage(), e);
+			throw new RuntimeException("Failed to create official letter PDF", e);
 		}
 
 		officialLetter.setId(ol.getId());
@@ -101,16 +159,17 @@ public class OfficialLetterServiceImpl implements OfficialLetterService {
 			oos.writeObject(doc);
 			return bos.toByteArray();
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.error("Failed to convert document to byte array. Error: {}", e.getMessage(), e);
 			return null;
 		}
-		
-		
+
+
 	}
 
 	@Override
 	public OfficialLetter findById(Long id) {
-		return officialLetterDao.findById(id).get();
+		return officialLetterDao.findById(id)
+				.orElseThrow(() -> new RuntimeException("Official letter not found with id: " + id));
 	}
 
 	@Override

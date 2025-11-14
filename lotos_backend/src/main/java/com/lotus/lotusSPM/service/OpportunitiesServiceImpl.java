@@ -73,8 +73,8 @@ public class OpportunitiesServiceImpl implements OpportunitiesService {
 
 	@Override
 	public Opportunities findById(Long id) {
-		return opportunitiesDao.findById(id).get();
-			
+		return opportunitiesDao.findById(id)
+				.orElseThrow(() -> new RuntimeException("Opportunity not found with id: " + id));
 	}
 
 

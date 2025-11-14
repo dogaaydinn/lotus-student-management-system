@@ -30,7 +30,8 @@ public class DocumentsServiceImp implements DocumentsService {
 
 	@Override
 	public Documents getFile(String id) {
-		return documentsDao.findById(id).get();
+		return documentsDao.findById(id)
+				.orElseThrow(() -> new RuntimeException("Document not found with id: " + id));
 	}
 
 	@Override

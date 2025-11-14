@@ -50,7 +50,8 @@ public class MessagesServiceImpl implements MessagesService {
 
 	@Override
 	public Messages findById(Long id) {
-		return messagesDao.findById(id).get();
+		return messagesDao.findById(id)
+				.orElseThrow(() -> new RuntimeException("Message not found with id: " + id));
 	}
 
 

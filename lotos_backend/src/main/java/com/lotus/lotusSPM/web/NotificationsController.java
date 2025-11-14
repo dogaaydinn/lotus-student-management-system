@@ -29,11 +29,11 @@ public class NotificationsController {
 	public ResponseEntity<?> deleteNotification(@PathVariable("id") Long id) {
 		try {
 			notificationsService.deleteNotifications(id);
+			log.info("Notification deleted successfully: {}", id);
 			return ResponseEntity.ok().build();
 		} catch (Exception ex) {
-			System.out.println(ex.getMessage());
-			ex.printStackTrace();
-			return ResponseEntity.notFound().build();
+			log.error("Failed to delete notification with id: {}. Error: {}", id, ex.getMessage(), ex);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
 
 	}
