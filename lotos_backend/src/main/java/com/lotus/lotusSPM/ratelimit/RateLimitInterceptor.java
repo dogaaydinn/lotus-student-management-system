@@ -39,7 +39,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         String minuteKey = "rate_limit:minute:" + identifier;
         Long minuteCount = redisTemplate.opsForValue().increment(minuteKey);
 
-        if (minuteCount == 1) {
+        if (minuteCount != null && minuteCount == 1) {
             redisTemplate.expire(minuteKey, 1, TimeUnit.MINUTES);
         }
 
