@@ -37,13 +37,27 @@ import lombok.extern.slf4j.Slf4j;
 public class OfficialLetterServiceImpl implements OfficialLetterService {
 
 	/**
-	 * Validate that a string is safe to use as a single file component.
-	 * Returns true if the string contains no path separators or "..".
-	 * Adapt as needed for further restrictions.
+	 * Sanitize a string for safe use in filenames.
+	 * Removes all characters except alphanumeric, underscore, and hyphen.
+	 * This prevents path traversal attacks by removing path separators and special characters.
 	 */
-	private static boolean isValidFileComponent(String value) {
-		if (value == null || value.isEmpty()) return false;
-		return !value.contains("..") && !value.contains("/") && !value.contains("\\");
+	private static String sanitizeFilename(String input) {
+		if (input == null || input.isEmpty()) {
+			return "unknown";
+		}
+		// Only allow alphanumeric characters, underscore, and hyphen
+		// This completely prevents path traversal by removing all path separators
+		return input.replaceAll("[^a-zA-Z0-9_-]", "_");
+	}
+
+	/**
+	 * Validate that a resolved path is within the expected directory.
+	 * This prevents path traversal attacks even if sanitization is bypassed.
+	 */
+	private boolean isPathSafe(Path resolvedPath, Path baseDirectory) throws IOException {
+		Path canonicalBase = baseDirectory.toRealPath();
+		Path canonicalResolved = resolvedPath.toAbsolutePath().normalize();
+		return canonicalResolved.startsWith(canonicalBase);
 	}
 
 	@Value("${app.pdf.output.path:${java.io.tmpdir}/lotus-pdfs}")
@@ -60,23 +74,30 @@ public class OfficialLetterServiceImpl implements OfficialLetterService {
 		OfficialLetter officialLetter = new OfficialLetter();
 		Student student = studentDao.findByUsername(ol.getUsername());
 
-		// Validate username for safe usage in file name
-		if (!isValidFileComponent(ol.getUsername())) {
-			log.error("Invalid username used as file component: {}", ol.getUsername());
-			throw new IllegalArgumentException("Invalid username for official letter file.");
-		}
-
 		Document document = new Document();
 		try {
 			// Create output directory if it doesn't exist
-			Path outputDir = Paths.get(pdfOutputPath);
+			Path outputDir = Paths.get(pdfOutputPath).toAbsolutePath().normalize();
 			if (!Files.exists(outputDir)) {
 				Files.createDirectories(outputDir);
 			}
 
+			// Sanitize username to prevent path traversal
+			// Only alphanumeric, underscore, and hyphen are allowed
+			String safeUsername = sanitizeFilename(ol.getUsername());
+
 			String filename = String.format("OfficialLetter_%s_%d.pdf",
-					ol.getUsername(), System.currentTimeMillis());
-			Path filePath = outputDir.resolve(filename);
+					safeUsername, System.currentTimeMillis());
+			Path filePath = outputDir.resolve(filename).normalize();
+
+			// Defense in depth: Verify the resolved path is within the base directory
+			if (!isPathSafe(filePath, outputDir)) {
+				log.error("Path traversal attempt detected for username: {}", ol.getUsername());
+				throw new SecurityException("Invalid file path: potential path traversal attack");
+			}
+
+			log.info("Creating official letter PDF for user: {} at safe path: {}",
+					ol.getUsername(), filePath);
 
 			OutputStream outputStream = new FileOutputStream(filePath.toFile());
 
