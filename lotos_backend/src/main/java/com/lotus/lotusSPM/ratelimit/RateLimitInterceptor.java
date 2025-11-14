@@ -58,7 +58,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         String hourKey = "rate_limit:hour:" + identifier;
         Long hourCount = redisTemplate.opsForValue().increment(hourKey);
 
-        if (hourCount == 1) {
+        if (hourCount != null && hourCount == 1) {
             redisTemplate.expire(hourKey, 1, TimeUnit.HOURS);
         }
 
