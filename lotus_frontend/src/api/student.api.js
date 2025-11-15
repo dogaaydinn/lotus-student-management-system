@@ -1,7 +1,7 @@
-import axios from 'axios'
+import apiClient from '@/lib/axios.js'
 
 export const loginStudent = async (username, password) => {
-  const response = await axios.post('http://localhost:8085/student/login', {
+  const response = await apiClient.post('/student/login', {
     username,
     password
   })
@@ -9,6 +9,6 @@ export const loginStudent = async (username, password) => {
 }
 
 export const getStudentById = async (id) => {
-  const response = await axios.get(`http://localhost:8085/student/${id}`)
+  const response = await apiClient.get(`/student/${id}`)
   return response.data
 }

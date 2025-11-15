@@ -1,11 +1,11 @@
-import axios from 'axios'
+import apiClient from '@/lib/axios.js'
 
 export const getFiles = async () => {
-  const response = await axios.get('http://localhost:8085/files')
+  const response = await apiClient.get('/files')
   return response.data
 }
 
 export const getFilesByID = async (id) => {
-  const response = await axios.get(`http://localhost:8085/files/${id}`)
+  const response = await apiClient.get(`/files/${id}`)
   return response.data
 }

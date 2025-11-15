@@ -1,25 +1,25 @@
-import axios from 'axios'
+import apiClient from '@/lib/axios.js'
 
 export const uploadLetter = async (letter) => {
-  const response = await axios.post('http://localhost:8085/letter/upload', {
+  const response = await apiClient.post('/letter/upload', {
     letter
   })
   return response.data
 }
 
 export const createOfficialLetter = async (letter) => {
-  const response = await axios.post('http://localhost:8085/letter/create', {
+  const response = await apiClient.post('/letter/create', {
     letter
   })
   return response.data
 }
 
 export const getOfficialLetters = async () => {
-  const response = await axios.get('http://localhost:8085/letter/get')
+  const response = await apiClient.get('/letter/get')
   return response.data
 }
 
 export const getFindByOL = async (id) => {
-  const response = await axios.get(`http://localhost:8085/letter/get/${id}`)
+  const response = await apiClient.get(`/letter/get/${id}`)
   return response.data
 }

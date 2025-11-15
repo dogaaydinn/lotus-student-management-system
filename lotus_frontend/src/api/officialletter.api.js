@@ -1,8 +1,8 @@
-import axios from 'axios'
+import apiClient from '@/lib/apiClient.js'
 
 export const createOfficialLetter = async (data) => {
-  const response = await axios.post(
-    'http://localhost:8085/officialLetter',
+  const response = await apiClient.post(
+    '/officialLetter',
 
     {
       name: data.name,

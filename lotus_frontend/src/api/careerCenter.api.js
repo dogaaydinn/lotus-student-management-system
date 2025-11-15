@@ -1,7 +1,7 @@
-import axios from 'axios'
+import apiClient from '@/lib/apiClient.js'
 
 export const loginCareerCenter = async (username, password) => {
-  const response = await axios.post('http://localhost:8085/careerCenter/login', {
+  const response = await apiClient.post('/careerCenter/login', {
     username,
     password
   })
@@ -9,13 +9,13 @@ export const loginCareerCenter = async (username, password) => {
 }
 
 export const assignCareerCenter = async (username) => {
-  const response = await axios.post('http://localhost:8085/careerCenter/assign', {
+  const response = await apiClient.post('/careerCenter/assign', {
     username
   })
   return response.data
 }
 
 export const getCareerCenterById = async (id) => {
-  const response = await axios.get(`http://localhost:8085/careerCenter/${id}`)
+  const response = await apiClient.get(`/careerCenter/${id}`)
   return response.data
 }

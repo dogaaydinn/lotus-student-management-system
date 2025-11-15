@@ -1,7 +1,7 @@
-import axios from 'axios'
+import apiClient from '@/lib/axios.js'
 
 export const uploadLogo = async (logo) => {
-  const response = await axios.post('http://localhost:8085/logo/upload', {
+  const response = await apiClient.post('/logo/upload', {
     logo
   })
   return response.data

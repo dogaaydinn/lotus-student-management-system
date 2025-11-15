@@ -1,13 +1,13 @@
-import axios from 'axios'
+import apiClient from '@/lib/apiClient.js'
 
 export const getNotifications = async () => {
-  const response = await axios.get('http://localhost:8085/notifications')
+  const response = await apiClient.get('/notifications')
   return response.data
 }
 
 export const createNotification = async (notification) => {
-  const response = await axios.post(
-    'http://localhost:8085/notifications',
+  const response = await apiClient.post(
+    '/notifications',
 
     {
       id: notification.id,
@@ -23,6 +23,6 @@ export const createNotification = async (notification) => {
 }
 
 export const deleteNotification = async (id) => {
-  const response = await axios.delete(`http://localhost:8085/notifications/${id}`)
+  const response = await apiClient.delete(`/notifications/${id}`)
   return response.data
 }

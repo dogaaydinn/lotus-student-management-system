@@ -1,6 +1,6 @@
-import axios from 'axios'
+import apiClient from '@/lib/axios.js'
 
 export const getInstructors = async () => {
-  const response = await axios.get('http://localhost:8085/instructors')
+  const response = await apiClient.get('/instructors')
   return response.data
 }

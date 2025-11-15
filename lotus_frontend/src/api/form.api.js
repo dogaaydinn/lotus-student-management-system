@@ -1,13 +1,13 @@
-import axios from 'axios'
+import apiClient from '@/lib/axios.js'
 
 export const uploadForm = async (form) => {
-  const response = await axios.post('http://localhost:8085/form/upload', {
+  const response = await apiClient.post('/form/upload', {
     form
   })
   return response.data
 }
 
 export const getApplicationForms = async () => {
-  const response = await axios.get('http://localhost:8085/form/get')
+  const response = await apiClient.get('/form/get')
   return response.data
 }

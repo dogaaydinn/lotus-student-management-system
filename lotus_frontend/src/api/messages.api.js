@@ -1,33 +1,33 @@
-import axios from 'axios'
+import apiClient from '@/lib/apiClient.js'
 
 export const getMessages = async () => {
-  const response = await axios.get('http://localhost:8085/messages')
+  const response = await apiClient.get('/messages')
   return response.data
 }
 
 export const getMessageByEmailTo = async (email) => {
-  const response = await axios.get(`http://localhost:8085/messageTo/${email}`)
+  const response = await apiClient.get(`/messageTo/${email}`)
   return response.data
 }
 
 export const getMessageByEmailFrom = async (email) => {
-  const response = await axios.get(`http://localhost:8085/messageFrom/${email}`)
+  const response = await apiClient.get(`/messageFrom/${email}`)
   return response.data
 }
 
 export const getMessageById = async (id) => {
-  const response = await axios.get(`http://localhost:8085/message/${id}`)
+  const response = await apiClient.get(`/message/${id}`)
   return response.data
 }
 
 export const deleteMessageById = async (id) => {
-  const response = await axios.delete(`http://localhost:8085/messages/${id}`)
+  const response = await apiClient.delete(`/messages/${id}`)
   return response.data
 }
 
 export const createMessage = async (message) => {
-  const response = await axios.post(
-    'http://localhost:8085/message',
+  const response = await apiClient.post(
+    '/message',
 
     {
       id: 123,
@@ -44,16 +44,16 @@ export const createMessage = async (message) => {
 }
 
 export const deleteMessage = async (id) => {
-  const response = await axios.delete(`http://localhost:8085/messages/${id}`)
+  const response = await apiClient.delete(`/messages/${id}`)
   return response.data
 }
 
 export const getMsgTo = async (to) => {
-  const response = await axios.get(`http://localhost:8085/messages/${to}`)
+  const response = await apiClient.get(`/messages/${to}`)
   return response.data
 }
 
 export const getMsgFrom = async (from) => {
-  const response = await axios.get(`http://localhost:8085/messages/${from}`)
+  const response = await apiClient.get(`/messages/${from}`)
   return response.data
 }
