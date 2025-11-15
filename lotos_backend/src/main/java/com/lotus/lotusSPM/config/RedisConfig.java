@@ -64,8 +64,9 @@ public class RedisConfig {
         GenericJackson2JsonRedisSerializer jackson2JsonRedisSerializer =
             new GenericJackson2JsonRedisSerializer(objectMapper);
 
-        RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-            .entryTtl(Duration.ofHours(1))
+        // Default cache configuration (5 minutes TTL)
+        RedisCacheConfiguration defaultConfig = RedisCacheConfiguration.defaultCacheConfig()
+            .entryTtl(Duration.ofMinutes(5))
             .serializeKeysWith(
                 RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer())
             )
@@ -74,8 +75,32 @@ public class RedisConfig {
             )
             .disableCachingNullValues();
 
+        // Multi-level caching strategies with different TTLs
+        java.util.Map<String, RedisCacheConfiguration> cacheConfigurations = new java.util.HashMap<>();
+
+        // Short-lived cache (5 minutes) - Frequently accessed, frequently updated
+        cacheConfigurations.put("students", defaultConfig.entryTtl(Duration.ofMinutes(5)));
+        cacheConfigurations.put("opportunities", defaultConfig.entryTtl(Duration.ofMinutes(5)));
+        cacheConfigurations.put("documents", defaultConfig.entryTtl(Duration.ofMinutes(5)));
+
+        // Medium-lived cache (30 minutes) - User sessions, permissions
+        cacheConfigurations.put("userSessions", defaultConfig.entryTtl(Duration.ofMinutes(30)));
+        cacheConfigurations.put("permissions", defaultConfig.entryTtl(Duration.ofMinutes(30)));
+        cacheConfigurations.put("coordinators", defaultConfig.entryTtl(Duration.ofMinutes(30)));
+
+        // Long-lived cache (1 hour) - Analytics, reports, rarely changing data
+        cacheConfigurations.put("analytics", defaultConfig.entryTtl(Duration.ofHours(1)));
+        cacheConfigurations.put("reports", defaultConfig.entryTtl(Duration.ofHours(1)));
+        cacheConfigurations.put("applicationForms", defaultConfig.entryTtl(Duration.ofHours(1)));
+
+        // Very long-lived cache (24 hours) - Static data, configurations
+        cacheConfigurations.put("configurations", defaultConfig.entryTtl(Duration.ofHours(24)));
+        cacheConfigurations.put("staticData", defaultConfig.entryTtl(Duration.ofHours(24)));
+
         return RedisCacheManager.builder(connectionFactory)
-            .cacheDefaults(config)
+            .cacheDefaults(defaultConfig)
+            .withInitialCacheConfigurations(cacheConfigurations)
+            .transactionAware()
             .build();
     }
 }
