@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 public class AnalyticsService {
 
     @Autowired
-    private AnalyticsRepository analyticsRepository;
+    private AnalyticsRepositoryImpl analyticsRepository;
 
     /**
      * Get student enrollment statistics
