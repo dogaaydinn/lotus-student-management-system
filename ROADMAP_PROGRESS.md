@@ -640,7 +640,7 @@ This document tracks the implementation progress of features outlined in the [RO
 | Metric | Target | Current Status | Progress |
 |--------|--------|----------------|----------|
 | API Response Time (p95) | < 200ms | Not measured | 🔴 0% |
-| Uptime SLA | 99.9% | Not measured | 🟡 ~95% (estimated) |
+| Uptime SLA | 99.9% | Not measured | 🟡 Unknown (not measured) |
 | Concurrent Users | 100,000+ | Not tested | 🔴 Unknown |
 | Critical Vulnerabilities | 0 | Scanning active | 🟢 Monitoring |
 | Code Quality (SonarQube) | Rating A | Not configured | 🔴 0% |
