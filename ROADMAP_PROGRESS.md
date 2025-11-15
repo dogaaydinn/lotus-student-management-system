@@ -103,11 +103,13 @@ This document tracks the implementation progress of features outlined in the [RO
   - [ ] Resource-level permissions
   - [ ] Department-level data isolation
 
+- [ ] **Security Hardening**
+  - [ ] API rate limiting per user/role (20% - partial: `RateLimitInterceptor.java` exists)
+
 #### 🔴 Not Started
 - [ ] **Security Hardening**
   - [ ] Content Security Policy (CSP) headers
   - [ ] HTTP Strict Transport Security (HSTS)
-  - [ ] API rate limiting per user/role (partial: `RateLimitInterceptor.java` exists)
   - [ ] IP whitelisting for admin access
   - [ ] Session management improvements
   - [ ] Credential rotation policies
