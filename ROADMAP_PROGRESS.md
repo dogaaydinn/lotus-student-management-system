@@ -46,7 +46,7 @@ This document tracks the implementation progress of features outlined in the [RO
 - [x] Kubernetes deployment manifests (7 K8s files in `/k8s`)
 - [x] CI/CD pipelines (3 GitHub Actions workflows)
 - [x] Prometheus + Grafana monitoring (`/monitoring`)
-- [x] Comprehensive error handling
+- [x] Comprehensive error handling (e.g., standardized error responses for 95%+ endpoints; global exception handler covers all exception types)
 - [x] Audit logging infrastructure
 - [x] Health checks & probes
 - [x] HikariCP connection pooling
