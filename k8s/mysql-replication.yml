@@ -1,0 +1,296 @@
+---
+# MySQL Primary (Master) StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql-primary
+  namespace: lotus-sms
+spec:
+  serviceName: mysql-primary
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+      role: primary
+  template:
+    metadata:
+      labels:
+        app: mysql
+        role: primary
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+              name: mysql
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: root-password
+            - name: MYSQL_DATABASE
+              value: "lotus_sms"
+            - name: MYSQL_USER
+              value: "lotus_user"
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: user-password
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+            - name: mysql-config
+              mountPath: /etc/mysql/conf.d
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1000m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
+          livenessProbe:
+            exec:
+              command:
+                - mysqladmin
+                - ping
+                - -h
+                - localhost
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - mysql
+                - -h
+                - 127.0.0.1
+                - -u
+                - root
+                - -p${MYSQL_ROOT_PASSWORD}
+                - -e
+                - "SELECT 1"
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: mysql-config
+          configMap:
+            name: mysql-primary-config
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: standard
+        resources:
+          requests:
+            storage: 50Gi
+
+---
+# MySQL Replica StatefulSet
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql-replica
+  namespace: lotus-sms
+spec:
+  serviceName: mysql-replica
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mysql
+      role: replica
+  template:
+    metadata:
+      labels:
+        app: mysql
+        role: replica
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+              name: mysql
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: root-password
+            - name: MYSQL_DATABASE
+              value: "lotus_sms"
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+            - name: mysql-config
+              mountPath: /etc/mysql/conf.d
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "1000m"
+          livenessProbe:
+            exec:
+              command:
+                - mysqladmin
+                - ping
+                - -h
+                - localhost
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - mysql
+                - -h
+                - 127.0.0.1
+                - -u
+                - root
+                - -p${MYSQL_ROOT_PASSWORD}
+                - -e
+                - "SELECT 1"
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: mysql-config
+          configMap:
+            name: mysql-replica-config
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: standard
+        resources:
+          requests:
+            storage: 50Gi
+
+---
+# MySQL Primary Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-primary
+  namespace: lotus-sms
+  labels:
+    app: mysql
+    role: primary
+spec:
+  ports:
+    - port: 3306
+      name: mysql
+  clusterIP: None
+  selector:
+    app: mysql
+    role: primary
+
+---
+# MySQL Replica Service (LoadBalancer for read queries)
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-replica
+  namespace: lotus-sms
+  labels:
+    app: mysql
+    role: replica
+spec:
+  ports:
+    - port: 3306
+      name: mysql
+  selector:
+    app: mysql
+    role: replica
+
+---
+# MySQL Primary ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-primary-config
+  namespace: lotus-sms
+data:
+  primary.cnf: |
+    [mysqld]
+    # Server ID (must be unique)
+    server-id=1
+
+    # Binary logging
+    log-bin=mysql-bin
+    binlog_format=ROW
+    binlog_do_db=lotus_sms
+
+    # GTID-based replication
+    gtid_mode=ON
+    enforce_gtid_consistency=ON
+
+    # Performance tuning
+    max_connections=500
+    innodb_buffer_pool_size=2G
+    innodb_log_file_size=512M
+    innodb_flush_log_at_trx_commit=1
+    sync_binlog=1
+
+    # Character set
+    character-set-server=utf8mb4
+    collation-server=utf8mb4_unicode_ci
+
+    # Slow query log
+    slow_query_log=1
+    long_query_time=2
+    slow_query_log_file=/var/log/mysql/slow-query.log
+
+---
+# MySQL Replica ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-replica-config
+  namespace: lotus-sms
+data:
+  replica.cnf: |
+    [mysqld]
+    # Server ID (must be unique - will be set dynamically)
+    server-id=2
+
+    # Read-only mode
+    read_only=1
+    super_read_only=1
+
+    # Relay log
+    relay-log=relay-bin
+    log_slave_updates=1
+
+    # GTID-based replication
+    gtid_mode=ON
+    enforce_gtid_consistency=ON
+
+    # Performance tuning
+    max_connections=1000
+    innodb_buffer_pool_size=2G
+
+    # Character set
+    character-set-server=utf8mb4
+    collation-server=utf8mb4_unicode_ci
+
+    # Skip DNS lookups
+    skip-name-resolve
+
+---
+# MySQL Secret (example - should be created separately)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secret
+  namespace: lotus-sms
+type: Opaque
+stringData:
+  root-password: "change_me_strong_root_password"
+  user-password: "change_me_strong_user_password"
+  replication-password: "change_me_replication_password"

@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  # Elasticsearch - Search and Analytics Engine
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.9.0
+    container_name: lotus-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - cluster.name=lotus-elk-cluster
+      - node.name=lotus-es-node-1
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - lotus-elk
+
+  # Logstash - Log Processing Pipeline
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.9.0
+    container_name: lotus-logstash
+    restart: unless-stopped
+    ports:
+      - "5000:5000/tcp"
+      - "5000:5000/udp"
+      - "9600:9600"
+    environment:
+      - "LS_JAVA_OPTS=-Xms1g -Xmx1g"
+      - xpack.monitoring.enabled=false
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - logstash-data:/usr/share/logstash/data
+    depends_on:
+      - elasticsearch
+    networks:
+      - lotus-elk
+
+  # Kibana - Visualization and Dashboard
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.9.0
+    container_name: lotus-kibana
+    restart: unless-stopped
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_NAME=lotus-kibana
+      - SERVER_HOST=0.0.0.0
+      - xpack.security.enabled=false
+      - xpack.encryptedSavedObjects.encryptionKey=lotus_encryption_key_min_32_chars_required
+    depends_on:
+      - elasticsearch
+    networks:
+      - lotus-elk
+
+  # Filebeat - Log Shipper
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.9.0
+    container_name: lotus-filebeat
+    restart: unless-stopped
+    user: root
+    volumes:
+      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - filebeat-data:/usr/share/filebeat/data
+    command: filebeat -e -strict.perms=false
+    depends_on:
+      - elasticsearch
+      - logstash
+    networks:
+      - lotus-elk
+
+  # Metricbeat - System Metrics Collection
+  metricbeat:
+    image: docker.elastic.co/beats/metricbeat:8.9.0
+    container_name: lotus-metricbeat
+    restart: unless-stopped
+    user: root
+    volumes:
+      - ./metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+      - /proc:/hostfs/proc:ro
+      - /:/hostfs:ro
+      - metricbeat-data:/usr/share/metricbeat/data
+    command: metricbeat -e -strict.perms=false -system.hostfs=/hostfs
+    depends_on:
+      - elasticsearch
+    networks:
+      - lotus-elk
+
+volumes:
+  elasticsearch-data:
+    driver: local
+  logstash-data:
+    driver: local
+  filebeat-data:
+    driver: local
+  metricbeat-data:
+    driver: local
+
+networks:
+  lotus-elk:
+    driver: bridge
+    name: lotus-elk-network

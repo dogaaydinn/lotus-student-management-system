@@ -1,0 +1,153 @@
+version: '3.8'
+
+services:
+  # MySQL Primary (Master)
+  mysql-primary:
+    image: mysql:8.0
+    container_name: lotus-mysql-primary
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=lotus_root_2025
+      - MYSQL_DATABASE=lotus_sms
+      - MYSQL_USER=lotus_user
+      - MYSQL_PASSWORD=lotus_password_2025
+      - MYSQL_REPLICATION_USER=repl_user
+      - MYSQL_REPLICATION_PASSWORD=repl_password_2025
+    volumes:
+      - mysql-primary-data:/var/lib/mysql
+      - ./mysql-config/primary.cnf:/etc/mysql/conf.d/primary.cnf:ro
+      - ./mysql-scripts/init-primary.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command:
+      - --server-id=1
+      - --log-bin=mysql-bin
+      - --binlog-format=ROW
+      - --gtid-mode=ON
+      - --enforce-gtid-consistency=ON
+      - --max-connections=500
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    networks:
+      - lotus-db-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MySQL Replica 1
+  mysql-replica-1:
+    image: mysql:8.0
+    container_name: lotus-mysql-replica-1
+    restart: unless-stopped
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=lotus_root_2025
+      - MYSQL_ALLOW_EMPTY_PASSWORD=no
+    volumes:
+      - mysql-replica-1-data:/var/lib/mysql
+      - ./mysql-config/replica.cnf:/etc/mysql/conf.d/replica.cnf:ro
+      - ./mysql-scripts/init-replica.sh:/docker-entrypoint-initdb.d/init-replica.sh:ro
+    command:
+      - --server-id=2
+      - --read-only=1
+      - --super-read-only=1
+      - --relay-log=relay-bin
+      - --log-slave-updates=1
+      - --gtid-mode=ON
+      - --enforce-gtid-consistency=ON
+      - --max-connections=1000
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-name-resolve
+    depends_on:
+      mysql-primary:
+        condition: service_healthy
+    networks:
+      - lotus-db-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MySQL Replica 2
+  mysql-replica-2:
+    image: mysql:8.0
+    container_name: lotus-mysql-replica-2
+    restart: unless-stopped
+    ports:
+      - "3308:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=lotus_root_2025
+      - MYSQL_ALLOW_EMPTY_PASSWORD=no
+    volumes:
+      - mysql-replica-2-data:/var/lib/mysql
+      - ./mysql-config/replica.cnf:/etc/mysql/conf.d/replica.cnf:ro
+      - ./mysql-scripts/init-replica.sh:/docker-entrypoint-initdb.d/init-replica.sh:ro
+    command:
+      - --server-id=3
+      - --read-only=1
+      - --super-read-only=1
+      - --relay-log=relay-bin
+      - --log-slave-updates=1
+      - --gtid-mode=ON
+      - --enforce-gtid-consistency=ON
+      - --max-connections=1000
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-name-resolve
+    depends_on:
+      mysql-primary:
+        condition: service_healthy
+    networks:
+      - lotus-db-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ProxySQL - Load Balancer for MySQL
+  proxysql:
+    image: proxysql/proxysql:2.5.3
+    container_name: lotus-proxysql
+    restart: unless-stopped
+    ports:
+      - "6033:6033"  # MySQL interface
+      - "6032:6032"  # Admin interface
+    volumes:
+      - ./proxysql/proxysql.cnf:/etc/proxysql.cnf:ro
+      - proxysql-data:/var/lib/proxysql
+    depends_on:
+      - mysql-primary
+      - mysql-replica-1
+      - mysql-replica-2
+    networks:
+      - lotus-db-network
+
+volumes:
+  mysql-primary-data:
+    driver: local
+  mysql-replica-1-data:
+    driver: local
+  mysql-replica-2-data:
+    driver: local
+  proxysql-data:
+    driver: local
+
+networks:
+  lotus-db-network:
+    driver: bridge
+    name: lotus-mysql-replication
+
+# Usage Instructions:
+# 1. Start the stack: docker-compose -f docker-compose-mysql-replication.yml up -d
+# 2. Check replication status:
+#    docker exec -it lotus-mysql-replica-1 mysql -u root -plotus_root_2025 -e "SHOW REPLICA STATUS\G"
+# 3. Connect via ProxySQL (port 6033) for automatic read/write splitting
+# 4. Primary: localhost:3306 (writes)
+# 5. Replicas: localhost:3307, localhost:3308 (reads)
+# 6. ProxySQL Admin: mysql -h 127.0.0.1 -P 6032 -u admin -padmin

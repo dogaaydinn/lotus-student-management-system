@@ -1,0 +1,79 @@
+metricbeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+
+metricbeat.modules:
+  # System metrics
+  - module: system
+    period: 10s
+    metricsets:
+      - cpu
+      - load
+      - memory
+      - network
+      - process
+      - process_summary
+      - socket_summary
+      - filesystem
+      - fsstat
+    processes: ['.*']
+    process.include_top_n:
+      by_cpu: 5
+      by_memory: 5
+
+  # Docker metrics
+  - module: docker
+    period: 10s
+    hosts: ["unix:///var/run/docker.sock"]
+    metricsets:
+      - container
+      - cpu
+      - diskio
+      - healthcheck
+      - info
+      - memory
+      - network
+
+  # MySQL metrics (if MySQL exporter is running)
+  - module: prometheus
+    period: 10s
+    hosts: ["mysql-exporter:9104"]
+    metrics_path: /metrics
+
+  # Redis metrics
+  - module: redis
+    period: 10s
+    hosts: ["redis:6379"]
+    metricsets: ["info", "keyspace"]
+
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+  - add_cloud_metadata: ~
+  - add_docker_metadata: ~
+  - add_fields:
+      target: ''
+      fields:
+        application: lotus-sms
+        environment: ${ENVIRONMENT:development}
+
+# Output to Elasticsearch
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]
+  indices:
+    - index: "metricbeat-lotus-sms-%{+yyyy.MM.dd}"
+
+# Kibana dashboards
+setup.kibana:
+  host: "kibana:5601"
+
+setup.dashboards.enabled: true
+
+# Logging
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/metricbeat
+  name: metricbeat
+  keepfiles: 7
+  permissions: 0644

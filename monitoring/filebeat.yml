@@ -1,0 +1,57 @@
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/lotus-sms/*.log
+      - /var/log/lotus-sms/application/*.log
+    fields:
+      app: lotus-sms
+      environment: ${ENVIRONMENT:development}
+    fields_under_root: true
+    multiline.pattern: '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
+    multiline.negate: true
+    multiline.match: after
+
+  - type: docker
+    enabled: true
+    containers.ids:
+      - '*'
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+      - decode_json_fields:
+          fields: ["message"]
+          target: "json"
+          overwrite_keys: true
+
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+  - add_cloud_metadata: ~
+  - add_docker_metadata: ~
+
+# Output to Logstash
+output.logstash:
+  hosts: ["logstash:5044"]
+  enabled: true
+
+# Output to Elasticsearch (alternative)
+# output.elasticsearch:
+#   hosts: ["elasticsearch:9200"]
+#   indices:
+#     - index: "lotus-sms-%{+yyyy.MM.dd}"
+#       when.contains:
+#         fields.app: "lotus-sms"
+
+# Logging
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7
+  permissions: 0644

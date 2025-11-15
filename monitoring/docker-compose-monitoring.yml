@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # Prometheus - Metrics Collection
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: lotus-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    networks:
+      - lotus-monitoring
+
+  # Grafana - Visualization
+  grafana:
+    image: grafana/grafana:10.0.3
+    container_name: lotus-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=lotus_admin_2025
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_SMTP_ENABLED=true
+      - GF_SMTP_HOST=smtp.gmail.com:587
+      - GF_SMTP_USER=your-email@gmail.com
+      - GF_SMTP_PASSWORD=your-app-password
+      - GF_SMTP_FROM_ADDRESS=noreply@lotus-sms.com
+      - GF_SMTP_FROM_NAME=Lotus SMS Monitoring
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana-dashboards.json:/etc/grafana/provisioning/dashboards/lotus-sms.json
+      - ./grafana-datasources.yml:/etc/grafana/provisioning/datasources/prometheus.yml
+    depends_on:
+      - prometheus
+    networks:
+      - lotus-monitoring
+
+  # Node Exporter - System Metrics
+  node-exporter:
+    image: prom/node-exporter:v1.6.1
+    container_name: lotus-node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - lotus-monitoring
+
+  # AlertManager - Alert Management
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: lotus-alertmanager
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager-data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+    networks:
+      - lotus-monitoring
+
+volumes:
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+  alertmanager-data:
+    driver: local
+
+networks:
+  lotus-monitoring:
+    driver: bridge
+    name: lotus-monitoring-network
