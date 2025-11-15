@@ -1,4 +1,4 @@
-import apiClient from '@/lib/axios.js'
+import apiClient from '@/lib/apiClient.js'
 
 export const uploadLogo = async (logo) => {
   const response = await apiClient.post('/logo/upload', {

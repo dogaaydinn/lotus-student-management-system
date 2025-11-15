@@ -1,4 +1,4 @@
-import apiClient from '@/lib/axios.js'
+import apiClient from '@/lib/apiClient.js'
 
 export const uploadForm = async (form) => {
   const response = await apiClient.post('/form/upload', {

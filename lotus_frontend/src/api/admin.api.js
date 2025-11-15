@@ -1,4 +1,4 @@
-import apiClient from '@/lib/axios.js'
+import apiClient from '@/lib/apiClient.js'
 
 export const loginAdmin = async (username, password) => {
   const response = await apiClient.post('/admin/login', {

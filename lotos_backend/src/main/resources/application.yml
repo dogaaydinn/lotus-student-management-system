@@ -85,19 +85,35 @@ app:
     allowed-headers: "*"
     allow-credentials: true
 
+# AWS S3 Configuration
+aws:
+  s3:
+    enabled: ${AWS_S3_ENABLED:false}
+    access-key: ${AWS_ACCESS_KEY:}
+    secret-key: ${AWS_SECRET_KEY:}
+    region: ${AWS_REGION:eu-north-1}
+    bucket-name: ${AWS_S3_BUCKET:lotus-spm-files}
+    endpoint: ${AWS_S3_ENDPOINT:} # For LocalStack or MinIO
+
 # Actuator Configuration
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus,loggers,env
+        include: health,info,metrics,prometheus,loggers,env,threaddump,heapdump
       base-path: /actuator
     enabled-by-default: true
   endpoint:
     health:
       show-details: when-authorized
+      show-components: when-authorized
       probes:
         enabled: true
+      group:
+        readiness:
+          include: db,redis,diskSpace
+        liveness:
+          include: ping
   metrics:
     export:
       prometheus:
@@ -105,10 +121,20 @@ management:
     distribution:
       percentiles-histogram:
         http.server.requests: true
+    tags:
+      application: ${spring.application.name}
+      environment: ${spring.profiles.active}
   health:
     livenessstate:
       enabled: true
     readinessstate:
+      enabled: true
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
       enabled: true
 
 # Logging Configuration

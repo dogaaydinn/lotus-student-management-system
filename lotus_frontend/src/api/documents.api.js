@@ -1,4 +1,4 @@
-import apiClient from '@/lib/axios.js'
+import apiClient from '@/lib/apiClient.js'
 
 export const getDocuments = async () => {
   const response = await apiClient.get('/documents')
